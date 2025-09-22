@@ -1,94 +1,97 @@
-const main = document.getElementById('main');
-const addUserBtn = document.getElementById('add-user');
-const doubleBtn = document.getElementById('double');
-const showMillionairesBtn = document.getElementById('show-millionaires');
-const sortBtn = document.getElementById('sort');
-const calculateWealthBtn = document.getElementById('calculate-wealth');
+const form = document.getElementById("registration-form");
+const username = document.getElementById("username");
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+const confirmPassword = document.getElementById("confirmPassword");
 
-let data = [];
+form.addEventListener("submit", function (e) {
+  e.preventDefault();
 
-geRandomUser();
-getRandomUser();
-getRandomUser();
+  const isRequiredValid = checkRequired([username, email, password, confirmPassword]);
 
-//Fetch random user and add money
-async function getRandomUser() {
-    const res = await fetch('https://randomuser.me/api');
-    const data = await res.json();
+  let isFormValid = isRequiredValid;
 
-    const user = data.results[0];
+  if (isRequiredValid) {
+    const isUsernameValid = checkLength(username, 3, 15);
+    const isEmailValid = checkEmail(email);
+    const isPasswordValid = checkLength(password, 6, 25);
+    const isPasswordsMatch = checkPasswordsMatch(password, confirmPassword);
 
-    const newUser = {
-        name: `${user.name.first} ${user.name.last}`,
-        money: Math.floor(Math.random() * 1000000)
-    };
+    isFormValid = isUsernameValid && isEmailValid && isPasswordValid && isPasswordsMatch;
+  }
 
-    addData(newUser);
-}
-
-//Double everyones money
-function doubleMoney() {
-    data = data.map(user => {
-        return { ...user, money: user.money * 2};
+  if (isFormValid) {
+    alert("Registration successful!");
+    form.reset();
+    document.querySelectorAll(".form-group").forEach((group) => {
+      group.className = "form-group";
     });
+  }
+});
 
-    updateDOM();
+function checkPasswordsMatch(input1, input2) {
+  if (input1.value !== input2.value) {
+    showError(input2, "Passwords do not match");
+    return false;
+  }
+  return true;
 }
 
-//Sort users by richest
-function sortByRichest() {
-    console.log(123);
-    data.sort((a, b) => b.money - a.money);
-
-    updateDOM();
+function checkEmail(email) {
+  // Email regex that covers most common email formats
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (emailRegex.test(email.value.trim())) {
+    showSuccess(email);
+    return true;
+  } else {
+    showError(email, "Email is not valid");
+    return false;
+  }
 }
 
-//Filter only millionaires
-function showMillionaires() {
-    data = data.filter(user => user.money > 1000000);
-
-    updateDOM();
+function checkLength(input, min, max) {
+  if (input.value.length < min) {
+    showError(input, `${formatFieldName(input)} must be at least ${min} characters.`);
+    return false;
+  } else if (input.value.length > max) {
+    showError(input, `${formatFieldName(input)} must be less than ${max} characters.`);
+    return false;
+  } else {
+    showSuccess(input);
+    return true;
+  }
 }
 
-//Calculate the total wealth
-function calculateWealth() {
-    const wealth = data.reduce((acc, user) => (acc += user.money), 0);
+function checkRequired(inputArray) {
+  let isValid = true;
 
-    const wealthEl = document.createElement('div');
-    wealthEl.innerHTML = <h3>Total Wealth: <strong>${formatMoney(wealth)}</strong></h3>;
-    main.appendChild(wealthEl);
-}
-
-//Add new obj to data arr
-function addData(obj) {
-    data.push(obj);
-
-    updateDOM();
-}
-
-//Update DOM
-function updateDOM(providedData = data) {
-    //Clear main div
-    main.innerHTML = '<h2><strong>Person</strong> Wealth</h2>';
-
-    providedData.forEach(item => {
-    const element = document.createElement('div');
-    element.classList.add('person');
-    element.innerHTML = `<strong>${item.name}</strong> ${formatMoney(
-      item.money
-    )}`;
-    main.appendChild(element);
+  inputArray.forEach((input) => {
+    // Password is required
+    if (input.value.trim() === "") {
+      showError(input, `${formatFieldName(input)} is required`);
+      isValid = false;
+    } else {
+      showSuccess(input);
+    }
   });
+
+  return isValid;
 }
 
-// Format number as money - https://stackoverflow.com/questions/149055/how-to-format-numbers-as-currency-string
-function formatMoney(number) {
-  return '$' + number.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+// Format field name with proper capitalization
+function formatFieldName(input) {
+  // input id: username -> Username
+  return input.id.charAt(0).toUpperCase() + input.id.slice(1);
 }
 
-// Event listeners
-addUserBtn.addEventListener('click', getRandomUser);
-doubleBtn.addEventListener('click', doubleMoney);
-sortBtn.addEventListener('click', sortByRichest);
-showMillionairesBtn.addEventListener('click', showMillionaires);
-calculateWealthBtn.addEventListener('click', calculateWealth);
+function showError(input, message) {
+  const formGroup = input.parentElement;
+  formGroup.className = "form-group error";
+  const small = formGroup.querySelector("small");
+  small.innerText = message;
+}
+
+function showSuccess(input) {
+  const formGroup = input.parentElement;
+  formGroup.className = "form-group success";
+}
